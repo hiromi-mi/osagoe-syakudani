@@ -14,8 +14,39 @@
 # limitations under the License.
 
 import argparse
+import zlib
+import hashlib
+import sys
+import os
+
+def catfile(args):
+    print(args)
+
+def hashobject(args):
+    content = bytes(f"blob {len(args.str)}\0" + args.str, sys.getfilesystemencoding())
+    m = hashlib.sha1()
+    m.update(content)
+    digest = m.hexdigest()
+    print(digest)
+    dirname = f".git/objects/{digest[0:2]}"
+    os.makedirs(dirname, exist_ok=True)
+    with open("{}/{}".format(dirname, digest[2:]), "b+w") as f:
+        f.write(zlib.compress(content, level=1))
+
+def init(args):
+    dirname = f".git/refs"
+    os.makedirs(dirname, exist_ok=True)
+    with open(".git/HEAD", "w") as f:
+        f.write("ref: refs/heads/master")
 
 parser = argparse.ArgumentParser(description="Git subset")
 subparsers = parser.add_subparsers()
-subparsers.add_parser("cat-file")
-parser.parse_args()
+subcmd = subparsers.add_parser("init")
+subcmd.set_defaults(func=init)
+subcmd = subparsers.add_parser("cat-file")
+subcmd.set_defaults(func=catfile)
+subcmd = subparsers.add_parser("hash-object")
+subcmd.set_defaults(func=hashobject)
+subcmd.add_argument("str")
+args = parser.parse_args()
+args.func(args)

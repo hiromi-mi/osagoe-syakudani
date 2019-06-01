@@ -32,7 +32,13 @@ def catfile(args):
 
 
 def hashobject(args):
-    content = bytes(f"blob {len(args.str)}\0" + args.str, sys.getfilesystemencoding())
+    datastr = ""
+    if args.stdin:
+        datastr = sys.stdin.read(-1)
+    if args.file:
+        with open(args.file, "r") as f:
+            datastr = f.read(-1)
+    content = bytes(f"blob {len(datastr)}\0{datastr}", sys.getfilesystemencoding())
     m = hashlib.sha1()
     m.update(content)
     digest = m.hexdigest()
@@ -49,7 +55,7 @@ def init(args):
         f.write("ref: refs/heads/master")
 
 parser = argparse.ArgumentParser(description="Git subset")
-subparsers = parser.add_subparsers()
+subparsers = parser.add_subparsers(required=True)
 subcmd = subparsers.add_parser("init")
 subcmd.set_defaults(func=init)
 subcmd = subparsers.add_parser("cat-file")
@@ -60,6 +66,7 @@ subcmd.add_argument("-s", "--size", action="store_true")
 subcmd.add_argument("object")
 subcmd = subparsers.add_parser("hash-object")
 subcmd.set_defaults(func=hashobject)
-subcmd.add_argument("str")
+subcmd.add_argument("-s", "--stdin", action="store_true")
+subcmd.add_argument("-f", "--file")
 args = parser.parse_args()
 args.func(args)

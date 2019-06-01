@@ -20,7 +20,16 @@ import sys
 import os
 
 def catfile(args):
-    print(args)
+    with open(".git/objects/{}/{}".format(args.object[0:2], args.object[2:]), "b+r") as f:
+        data_typesize, _, data_item = zlib.decompress(f.read(-1)).partition(b'\0')
+        data_type, _, data_size = data_typesize.partition(b' ')
+        if args.prettyprint:
+            print(data_item.decode(sys.getfilesystemencoding()))
+        if args.type:
+            print(data_type.decode(sys.getfilesystemencoding()))
+        if args.size:
+            print(data_size.decode(sys.getfilesystemencoding()))
+
 
 def hashobject(args):
     content = bytes(f"blob {len(args.str)}\0" + args.str, sys.getfilesystemencoding())
@@ -45,6 +54,10 @@ subcmd = subparsers.add_parser("init")
 subcmd.set_defaults(func=init)
 subcmd = subparsers.add_parser("cat-file")
 subcmd.set_defaults(func=catfile)
+subcmd.add_argument("-p", "--prettyprint", action="store_true")
+subcmd.add_argument("-t", "--type", action="store_true")
+subcmd.add_argument("-s", "--size", action="store_true")
+subcmd.add_argument("object")
 subcmd = subparsers.add_parser("hash-object")
 subcmd.set_defaults(func=hashobject)
 subcmd.add_argument("str")

@@ -29,15 +29,31 @@ def cattree(args):
 def updateindex(args):
     rule = struct.Struct('>4sII')
     item_rule = struct.Struct('>IIIIIIIIII20sH')
+    tree_rule = struct.Struct('>IsIs20s')
     if os.path.exists(".git/index"):
         with open(".git/index", "rb") as f:
             allitem = f.read(-1)
             head,version,num_entries = rule.unpack_from(allitem)
             print(version,num_entries)
-            offset = rule.size
+            allitem = allitem[rule.size:]
             for i in range(num_entries):
-                ctime, ctimens, mtime, mtimens, dev, ino, permission, uid, gid, fsize, sha1, flags = item_rule.unpack_from(allitem[offset:])
-                offset += item_rule.size
+                ctime, ctimens, mtime, mtimens, dev, ino, permission, uid, gid, fsize, sha1, flags = item_rule.unpack_from(allitem)
+                allitem = allitem[item_rule.size:]
+                print(ctime, ctimens, mtime, mtimens, dev, ino, permission, uid, gid, fsize, sha1, flags)
+                fname, _, allitem = allitem.partition(b'\0')
+                allitem = allitem.lstrip(b'\0')
+                print(fname)
+
+            if allitem[0:4] == b'TREE':
+                ## REMAINDING TREE
+                allitem = allitem[4:] # TREE
+                fname, _, allitem = allitem.partition(b'\0')
+                allitem = allitem.lstrip(b'\0')
+                print(fname)
+                num_entry, _, subtrees, _, sha1 = tree_rule.unpack_from(allitem)
+                print(num_entry, subtrees, sha1)
+                allitem = allitem[tree_rule.size:]
+                print(allitem, len(allitem))
 
 def catfile(args):
     with open(".git/objects/{}/{}".format(args.object[0:2], args.object[2:]), "br") as f:

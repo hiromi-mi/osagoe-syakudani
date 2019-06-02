@@ -18,12 +18,26 @@ import zlib
 import hashlib
 import sys
 import os
+import struct
 
 def cattree(args):
     args.prettyprint = True
     args.type = False
     args.size = False
     catfile(args)
+
+def updateindex(args):
+    rule = struct.Struct('>4sII')
+    item_rule = struct.Struct('>IIIIIIIIII20sH')
+    if os.path.exists(".git/index"):
+        with open(".git/index", "rb") as f:
+            allitem = f.read(-1)
+            head,version,num_entries = rule.unpack_from(allitem)
+            print(version,num_entries)
+            offset = rule.size
+            for i in range(num_entries):
+                ctime, ctimens, mtime, mtimens, dev, ino, permission, uid, gid, fsize, sha1, flags = item_rule.unpack_from(allitem[offset:])
+                offset += item_rule.size
 
 def catfile(args):
     with open(".git/objects/{}/{}".format(args.object[0:2], args.object[2:]), "br") as f:
@@ -95,5 +109,10 @@ subcmd.add_argument("-f", "--file")
 subcmd = subparsers.add_parser("ls-tree")
 subcmd.add_argument("object")
 subcmd.set_defaults(func=cattree)
+
+subcmd = subparsers.add_parser("update-index")
+subcmd.add_argument("object")
+subcmd.add_argument("filename")
+subcmd.set_defaults(func=updateindex)
 args = parser.parse_args()
 args.func(args)

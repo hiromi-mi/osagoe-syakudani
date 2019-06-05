@@ -21,6 +21,18 @@ import os
 import struct
 
 def committree(args):
+    message = "test commit"
+    author = "test <test@test.example>"
+    datastr = f"tree {bytes.fromhex(args.object)}\nparent {bytes.fromhex(args.parent)\nauthor {author} 1600000000 +0900\ncommitter {author} 1600000000 +0900\n\n{message}"
+    content = bytes(f"commit {len(datastr)}\0{datastr}", sys.getfilesystemencoding())
+    m = hashlib.sha1()
+    m.update(content)
+    digest = m.hexdigest()
+    print(digest)
+    dirname = f".git/objects/{digest[0:2]}"
+    os.makedirs(dirname, exist_ok=True)
+    with open("{}/{}".format(dirname, digest[2:]), "bw") as f:
+        f.write(zlib.compress(content, level=1))
     print(args)
 
 def cattree(args):
@@ -158,7 +170,7 @@ subcmd.add_argument("filename")
 subcmd.set_defaults(func=updateindex)
 
 subcmd = subparsers.add_parser("commit-tree")
-subcmd.add_argument("-p", "--previousobject", required=True)
+subcmd.add_argument("-p", "--parent", required=True)
 subcmd.add_argument("object")
 subcmd.set_defaults(func=committree)
 args = parser.parse_args()

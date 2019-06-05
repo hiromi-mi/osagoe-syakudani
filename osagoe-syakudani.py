@@ -20,6 +20,9 @@ import sys
 import os
 import struct
 
+def committree(args):
+    print(args)
+
 def cattree(args):
     args.prettyprint = True
     args.type = False
@@ -127,6 +130,7 @@ def init(args):
         f.write("ref: refs/heads/master")
 
 parser = argparse.ArgumentParser(description="Git subset")
+parser.set_defaults(func=parser.error)
 subparsers = parser.add_subparsers(required=False)
 
 subcmd = subparsers.add_parser("init")
@@ -152,5 +156,10 @@ subcmd = subparsers.add_parser("update-index")
 subcmd.add_argument("object")
 subcmd.add_argument("filename")
 subcmd.set_defaults(func=updateindex)
+
+subcmd = subparsers.add_parser("commit-tree")
+subcmd.add_argument("-p", "--previousobject", required=True)
+subcmd.add_argument("object")
+subcmd.set_defaults(func=committree)
 args = parser.parse_args()
 args.func(args)

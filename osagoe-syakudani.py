@@ -28,7 +28,8 @@ def cattree(args):
 
 def updateindex(args):
     rule = struct.Struct('>4sII')
-    item_rule = struct.Struct('>IIIIIIIIII20sH')
+    #item_rule = struct.Struct('>IIIIIIIIII20sH')
+    item_rule = struct.Struct('>QQIIIIII20sH')
     tree_rule = struct.Struct('>IsIs20s')
     if os.path.exists(".git/index"):
         with open(".git/index", "rb") as f:
@@ -37,9 +38,9 @@ def updateindex(args):
             print(version,num_entries)
             allitem = allitem[rule.size:]
             for i in range(num_entries):
-                ctime, ctimens, mtime, mtimens, dev, ino, permission, uid, gid, fsize, sha1, flags = item_rule.unpack_from(allitem)
+                ctime, mtime, dev, ino, permission, uid, gid, fsize, sha1, flags = item_rule.unpack_from(allitem)
                 allitem = allitem[item_rule.size:]
-                print(ctime, ctimens, mtime, mtimens, dev, ino, permission, uid, gid, fsize, sha1, flags)
+                print(ctime, mtime, dev, ino, permission, uid, gid, fsize, sha1, flags)
                 fname, _, allitem = allitem.partition(b'\0')
                 allitem = allitem.lstrip(b'\0')
                 print(fname)
@@ -54,6 +55,27 @@ def updateindex(args):
                 print(num_entry, subtrees, sha1)
                 allitem = allitem[tree_rule.size:]
                 print(allitem, len(allitem))
+
+    if os.path.exists(args.filename):
+        statinfo = os.stat(args.filename)
+        ctime = statinfo.st_ctime_ns
+        mtime = statinfo.st_mtime_ns
+        dev = statinfo.st_dev
+        ino = statinfo.st_ino
+        permission = statinfo.st_mode
+        uid = statinfo.st_uid
+        gid = statinfo.st_gid
+        fsize = statinfo.st_size
+        sha1 = bytes.fromhex(args.object)
+        flags = len(bytes(args.filename, encoding='UTF-8'))
+
+    with open(".git/index", "wb") as f:
+        header = rule.pack(b'DIRC', 2, 1);
+        packed = item_rule.pack(ctime, mtime,dev, ino, permission, uid, gid, fsize, sha1, flags)
+        item = header + packed + bytes(args.filename, encoding='UTF-8')
+        item = item + (b'\0' * (len(item) % 8))
+        print(item)
+        f.write(item)
 
 def catfile(args):
     with open(".git/objects/{}/{}".format(args.object[0:2], args.object[2:]), "br") as f:

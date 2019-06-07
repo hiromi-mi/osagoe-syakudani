@@ -23,8 +23,8 @@ import struct
 def committree(args):
     message = "test commit"
     author = b"test <test@test.example>"
-    datastr = b"tree " + bytes.fromhex(args.object) + b"\nparent " + bytes.fromhex(args.parent) + b"\nauthor " + author + b" 1600000000 +0900\ncommitter " + author + b" 1600000000 +0900\n\n{message}"
-    content = bytes(f"commit {len(datastr)}\0{datastr}", sys.getfilesystemencoding())
+    datastr = b'tree ' + bytes(args.object, encoding=sys.getfilesystemencoding()) + b'\nparent ' + bytes(args.parent, encoding=sys.getfilesystemencoding()) + b'\nauthor ' + author + b' 1600000000 +0900\ncommitter ' + author + b' 1600000000 +0900\n\n' + bytes(message, encoding=sys.getfilesystemencoding())
+    content = bytes(f"commit {len(datastr)}\0", sys.getfilesystemencoding()) + datastr
     m = hashlib.sha1()
     m.update(content)
     digest = m.hexdigest()
